@@ -1,0 +1,18 @@
+Stack-based buffer overflow
+Integer overflow 
+Format Strings
+
+ROP attack: 	https://medium.com/@li_allouche/return-oriented-programming-rop-chain-358878d8bb02
+		https://en.hackndo.com/return-oriented-programming/
+
+Off-by-one: 	
+
+Return-to-lib-C attack: 
+		https://whitehat.vn/threads/gioi-thieu-va-khai-thac-lo-hong-tran-bo-dem-quay-lai-thu-vien.16298/
+
+Heap Overflow
+(Heap Exploit)"
+
+HEap Use-After-Free
+
+Heap Double Free Attack

@@ -1,0 +1,13 @@
+docker pull christoftorres/confuzzius
+
+
+docker run -i -t christoftorres/confuzzius
+
+
+docker cp "C:\Users\Admin\Downloads\Test.sol" eed864852c48:/examples/Test.sol
+
+
+
+python3 fuzzer/main.py -s examples/RemiCoin/contracts/RemiCoin.sol -c RemiCoin --solc v0.4.26 --evm byzantium -g 20
+
+python3 fuzzer/main.py -s /root/Test.sol -c FuzzableStaking --solc v0.4.26 --evm byzantium -g 10

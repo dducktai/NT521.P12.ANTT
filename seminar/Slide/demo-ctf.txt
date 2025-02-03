@@ -1,0 +1,61 @@
+https://play.picoctf.org/practice/challenge/257?page=1&search=buffer
+
+
+
+Trong trường hợp này, chuỗi ký tự `111111111111111111111111111111` (tổng cộng 30 ký tự) được nhập vào gây ra **buffer overflow**, dẫn đến việc chương trình in ra cờ bí mật (flag).
+
+### Phân tích quá trình:
+
+1. **Hàm `gets` và `strcpy`:**
+   - Khi bạn nhập chuỗi vào chương trình, lệnh `gets(buf1)` đọc toàn bộ chuỗi bạn nhập và lưu vào `buf1`, một mảng có kích thước 100 byte.
+   - Sau đó, hàm `vuln` được gọi với đối số là `buf1`, và chuỗi này tiếp tục được sao chép vào `buf2` (mảng 16 byte) bằng `strcpy`.
+
+2. **Ghi đè bộ nhớ (Buffer Overflow):**
+   - Chuỗi bạn nhập dài 30 ký tự, vượt quá kích thước 16 byte của `buf2`.
+   - Do `strcpy` không kiểm tra kích thước của chuỗi, phần dư của chuỗi (sau 16 byte đầu tiên) sẽ ghi đè lên các phần khác của stack, bao gồm cả các địa chỉ quan trọng, chẳng hạn như địa chỉ trả về hoặc các biến khác trong bộ nhớ.
+
+3. **Kích hoạt lỗi SIGSEGV:**
+   - Khi ghi đè xảy ra, điều này có thể gây ra lỗi phân đoạn (segmentation fault), vì chương trình cố gắng truy cập bộ nhớ không hợp lệ. Trong trường hợp này, lỗi **SIGSEGV** xảy ra và chương trình sẽ gọi hàm `sigsegv_handler`.
+   - Trong `sigsegv_handler`, giá trị của biến `flag` (đọc từ file `flag.txt`) được in ra. Đó là lý do tại sao bạn thấy cờ (flag) hiện ra khi nhập chuỗi dài.
+
+4. **In ra cờ (flag):**
+   - Khi lỗi buffer overflow xảy ra và tín hiệu **SIGSEGV** được gửi, hàm xử lý tín hiệu (`sigsegv_handler`) in ra nội dung của biến `flag`. Nội dung này chứa cờ mà bạn muốn tìm (`picoCTF{ov3rfl0ws_ar3nt_that_bad_9f2364bc}`).
+
+### Giải thích chi tiết:
+
+- Chuỗi ký tự bạn nhập (`111111111111111111111111111111`) dài hơn 16 byte (kích thước của `buf2`), gây ra lỗi ghi đè vùng nhớ (buffer overflow).
+- Lỗi này làm hỏng stack hoặc các địa chỉ trả về trong chương trình, dẫn đến tín hiệu phân đoạn lỗi **SIGSEGV**.
+- Khi tín hiệu **SIGSEGV** xảy ra, chương trình gọi hàm `sigsegv_handler`, in ra nội dung biến `flag`.
+- Vì vậy, bạn nhận được cờ picoCTF khi xảy ra lỗi này.
+
+### Khắc phục lỗ hổng:
+
+Để tránh lỗi buffer overflow, chương trình cần:
+- Sử dụng hàm an toàn như `strncpy` để kiểm soát kích thước chuỗi được sao chép.
+- Tránh sử dụng hàm không an toàn như `gets`, thay vào đó là `fgets` với giới hạn chiều dài chuỗi đầu vào.
+
+
+
+Câu lệnh `signal(SIGSEGV, sigsegv_handler);` có chức năng **đăng ký một hàm xử lý tín hiệu (signal handler)** cho tín hiệu **`SIGSEGV`**. Đây là cách mà chương trình định nghĩa hành vi sẽ thực hiện khi gặp tín hiệu **SIGSEGV** (Segmentation Fault – lỗi phân đoạn bộ nhớ).
+
+### Giải thích chi tiết:
+
+- **Tín hiệu `SIGSEGV` (Segmentation Fault)**:
+  - Tín hiệu này được hệ điều hành gửi đến một tiến trình khi tiến trình đó cố gắng truy cập vào vùng bộ nhớ không hợp lệ hoặc không được phép.
+  - Lỗi này thường xảy ra khi có sự cố trong quá trình truy cập con trỏ, vượt quá kích thước bộ đệm (buffer overflow), hoặc truy cập vào vùng nhớ chưa được cấp phát.
+
+- **Hàm `signal(int signal, void (*handler)(int))`:**
+  - Hàm này dùng để đăng ký một hàm xử lý tín hiệu (signal handler) cho một tín hiệu cụ thể.
+  - Tham số thứ nhất là tín hiệu mà bạn muốn xử lý (trong trường hợp này là `SIGSEGV`).
+  - Tham số thứ hai là con trỏ hàm đến hàm xử lý tín hiệu. Trong trường hợp này, hàm xử lý tín hiệu là `sigsegv_handler`.
+
+- **`sigsegv_handler`:**
+  - Đây là hàm xử lý tín hiệu mà chương trình đã đăng ký để xử lý khi gặp lỗi phân đoạn (`SIGSEGV`).
+  - Khi có lỗi phân đoạn xảy ra (ví dụ, do buffer overflow), thay vì chương trình bị dừng ngay lập tức bởi hệ điều hành, nó sẽ gọi hàm `sigsegv_handler`.
+  - Trong hàm `sigsegv_handler`, chương trình in ra nội dung của biến `flag` rồi thoát.
+
+### Tóm lại, câu lệnh `signal(SIGSEGV, sigsegv_handler);`:
+- Đăng ký hàm `sigsegv_handler` làm hàm xử lý cho tín hiệu **`SIGSEGV`**.
+- Khi chương trình gặp lỗi phân đoạn bộ nhớ (do truy cập vùng nhớ không hợp lệ), thay vì bị dừng đột ngột, hàm `sigsegv_handler` sẽ được gọi, và cờ (flag) sẽ được in ra.
+  
+Điều này là một phần quan trọng trong khai thác buffer overflow, vì khi chương trình bị lỗi phân đoạn (do ghi đè bộ nhớ), nó sẽ không bị dừng ngay lập tức mà thay vào đó sẽ in ra cờ chứa trong biến `flag`.

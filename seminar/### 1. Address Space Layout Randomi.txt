@@ -1,0 +1,49 @@
+### 1. **Address Space Layout Randomization (ASLR)**
+
+ASLR (Ngẫu nhiên hóa bố trí không gian địa chỉ) là một kỹ thuật bảo mật được sử dụng để chống lại các cuộc tấn công dựa trên **buffer overflow** bằng cách làm cho địa chỉ của các vùng bộ nhớ quan trọng như **stack**, **heap**, và **vùng chứa mã thực thi** trở nên không cố định.
+
+#### Chi tiết:
+- **Stack-based buffer overflow** xảy ra khi kẻ tấn công ghi dữ liệu vượt quá kích thước của một buffer trong stack, sau đó cố gắng thực thi mã độc tại địa chỉ cụ thể trong bộ nhớ. Nếu địa chỉ của vùng bộ nhớ này là cố định (static), kẻ tấn công có thể dự đoán và nhắm tới chính xác địa chỉ này.
+  
+- **ASLR** thay đổi ngẫu nhiên vị trí của các vùng nhớ như **stack**, **heap**, và **vùng chứa mã thực thi** mỗi khi chương trình chạy. Điều này khiến cho kẻ tấn công rất khó có thể dự đoán được địa chỉ cụ thể để thực thi mã độc hoặc ghi đè.
+
+Ví dụ:
+  - Trong một hệ thống không có ASLR, địa chỉ của stack có thể luôn bắt đầu tại một vị trí cố định, ví dụ: `0x7fffffff0000`. Kẻ tấn công có thể dựa vào thông tin này để thực hiện cuộc tấn công buffer overflow.
+  - Khi ASLR được kích hoạt, mỗi lần chương trình chạy, địa chỉ của stack có thể thay đổi ngẫu nhiên, ví dụ: từ `0x7fffffff0000` thành `0x7fffffeaa000`. Điều này làm cho kẻ tấn công không thể biết trước địa chỉ chính xác để tấn công.
+
+#### Ưu điểm:
+- **Ngăn chặn việc dự đoán địa chỉ**: Kẻ tấn công khó có thể dự đoán chính xác địa chỉ để ghi mã độc hoặc khai thác.
+- **Tăng độ khó của các cuộc tấn công**: Ngay cả khi lỗ hổng tồn tại, việc khai thác thành công vẫn rất khó khăn do kẻ tấn công không thể dự đoán được địa chỉ bộ nhớ chính xác.
+
+#### Hạn chế:
+- **Không hoàn toàn ngăn chặn được buffer overflow**: ASLR chỉ làm cho việc khai thác khó hơn, nhưng nếu một lỗi nghiêm trọng hơn xảy ra (ví dụ: rò rỉ địa chỉ trong bộ nhớ), ASLR có thể bị vô hiệu hóa.
+
+---
+
+### 2. **Data Execution Prevention (DEP)**
+
+DEP (Ngăn chặn thực thi dữ liệu) là một biện pháp bảo mật khác được sử dụng để ngăn không cho mã độc thực thi trên các vùng bộ nhớ không đáng tin cậy, như **stack** và **heap**. Mục tiêu chính của DEP là chặn các cuộc tấn công mà kẻ tấn công đưa mã độc vào vùng nhớ và sau đó cố gắng thực thi mã này.
+
+#### Chi tiết:
+- Các vùng bộ nhớ như **stack** và **heap** thường được sử dụng để lưu trữ dữ liệu. Trong các cuộc tấn công **buffer overflow**, kẻ tấn công có thể ghi mã độc vào các vùng nhớ này và sau đó tìm cách thực thi mã. Nếu mã độc được thực thi, kẻ tấn công có thể chiếm quyền kiểm soát chương trình.
+  
+- **DEP** phân loại các vùng bộ nhớ thành vùng có thể thực thi và vùng không thể thực thi. Các vùng **stack** và **heap** sẽ được đánh dấu là **không thể thực thi**. Vì vậy, ngay cả khi mã độc được ghi vào các vùng này, hệ thống sẽ chặn việc thực thi và chương trình sẽ dừng lại hoặc kết thúc một cách an toàn.
+
+Ví dụ:
+  - Kẻ tấn công cố gắng viết mã độc vào stack và sau đó điều khiển luồng chương trình để thực thi mã này. Nếu **DEP** được bật, vùng stack sẽ không thể thực thi mã, và hệ thống sẽ ngăn việc này.
+  
+#### Ưu điểm:
+- **Ngăn chặn mã độc từ các vùng bộ nhớ không đáng tin cậy**: Stack và heap không thể thực thi mã, làm giảm khả năng thực hiện các cuộc tấn công buffer overflow.
+- **Tăng tính bảo mật hệ thống**: Ngay cả khi có lỗ hổng buffer overflow, mã độc không thể thực thi được, giảm thiểu nguy cơ tấn công thành công.
+
+#### Hạn chế:
+- **Không ngăn chặn việc ghi dữ liệu**: DEP chỉ ngăn chặn việc thực thi mã, nhưng không ngăn chặn việc ghi đè dữ liệu lên các vùng nhớ. Nếu tấn công chỉ nhằm ghi đè dữ liệu (mà không cần thực thi mã), DEP có thể không hiệu quả.
+- **Không ngăn chặn các cuộc tấn công Return-Oriented Programming (ROP)**: Một số cuộc tấn công lợi dụng các đoạn mã đã có sẵn trong chương trình (thay vì ghi mã độc mới), do đó vẫn có thể vượt qua DEP.
+
+---
+
+### **Tóm lại:**
+- **ASLR** giúp ngăn chặn việc **dự đoán địa chỉ** của các vùng nhớ, làm cho các cuộc tấn công buffer overflow khó thành công hơn.
+- **DEP** ngăn chặn việc **thực thi mã độc** trong các vùng nhớ không đáng tin cậy như stack hoặc heap, giảm thiểu khả năng thành công của các cuộc tấn công buffer overflow.
+
+Cả hai kỹ thuật này thường được sử dụng kết hợp để bảo vệ hệ thống khỏi các cuộc tấn công **buffer overflow** và các cuộc tấn công khác nhắm vào quản lý bộ nhớ.
